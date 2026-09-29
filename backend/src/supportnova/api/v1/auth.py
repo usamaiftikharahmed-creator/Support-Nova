@@ -41,8 +41,8 @@ def _set_session(response: Response, user: User) -> str:
     token = create_access_token(user.id, user.role_code)
     csrf = new_csrf_token()
     max_age = settings.access_token_minutes * 60
-    response.set_cookie(ACCESS_COOKIE, token, httponly=True, secure=settings.cookie_secure, samesite="lax", max_age=max_age, path="/")
-    response.set_cookie(CSRF_COOKIE, csrf, httponly=False, secure=settings.cookie_secure, samesite="lax", max_age=max_age, path="/")
+    response.set_cookie(ACCESS_COOKIE, token, httponly=True, secure=True, samesite="none", max_age=max_age, path="/")
+    response.set_cookie(CSRF_COOKIE, csrf, httponly=False, secure=True, samesite="none", max_age=max_age, path="/")
     return csrf
 
 
