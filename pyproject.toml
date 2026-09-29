@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "supportnova"
+version = "1.0.0"
+description = "SupportNova - GenAI complaint intelligence with an independent Python ground-truth validation pipeline"
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "MIT" }
+
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.7",
+  "email-validator>=2.2",
+  "python-multipart>=0.0.18",
+  "SQLAlchemy>=2.0.36",
+  "psycopg[binary]>=3.2",
+  "alembic>=1.14",
+  "PyJWT>=2.10",
+  "bcrypt>=4.2",
+  "httpx>=0.28",
+  "anthropic>=1.0",
+  "PyYAML>=6.0",
+  "jsonschema>=4.23",
+  "numpy>=2.1",
+  "pymupdf>=1.25",
+  "python-docx>=1.1",
+  "openpyxl>=3.1",
+  "fpdf2>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "ruff>=0.8",
+  "mypy>=1.13",
+  "types-PyYAML"
+]
+
+[tool.setuptools]
+package-dir = {"" = "backend/src"}
+
+[tool.setuptools.packages.find]
+where = ["backend/src"]
+
+[tool.fastapi]
+entrypoint = "supportnova.main:app"
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "backend/src"
+packages = ["supportnova"]
+ignore_missing_imports = true
+warn_unused_ignores = true
+no_implicit_optional = true
+check_untyped_defs = true
