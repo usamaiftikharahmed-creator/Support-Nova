@@ -1,3 +1,4 @@
+
 /* Thin fetch client. Authentication uses the HttpOnly session cookie set by the API; unsafe
    requests carry the double-submit CSRF token. No token or secret is kept in JS storage and the
    AI provider key never reaches the browser - all AI calls happen server-side. */
@@ -26,7 +27,12 @@ export class ApiError extends Error {
   }
 }
 
+/* CSRF token returned by the login API. */
+let sessionCsrfToken: string | undefined
+
 function csrfToken(): string | undefined {
+  if (sessionCsrfToken) return sessionCsrfToken
+
   const m = document.cookie.match(/(?:^|;\s*)sn_csrf=([^;]+)/)
   return m ? decodeURIComponent(m[1]) : undefined
 }
@@ -59,28 +65,51 @@ async function parseError(res: Response): Promise<ApiError> {
 
 export async function request<T>(method: string, path: string, options: { body?: unknown; query?: Query; form?: FormData; signal?: AbortSignal } = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
+
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     const token = csrfToken()
     if (token) headers['X-CSRF-Token'] = token
   }
+
   let body: BodyInit | undefined
   if (options.form) body = options.form
   else if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json'
     body = JSON.stringify(options.body)
   }
+
   let res: Response
   try {
-    res = await fetch(`${API_BASE}${path}${qs(options.query)}`, { method, headers, body, credentials:'include', signal: options.signal })
+    res = await fetch(`${API_BASE}${path}${qs(options.query)}`, {
+      method,
+      headers,
+      body,
+      credentials: 'include',
+      signal: options.signal
+    })
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err
     throw new ApiError(0, 'network_error', 'Cannot reach SupportNova - check your connection and try again.')
   }
+
+  /* Save CSRF token returned by successful login. */
+  if (path === '/auth/login' && method === 'POST' && res.ok) {
+    try {
+      const data = await res.clone().json()
+      if (data.csrf_token) {
+        sessionCsrfToken = data.csrf_token
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   if (!res.ok) {
     const error = await parseError(res)
     if (res.status === 401 && !path.startsWith('/auth/')) window.dispatchEvent(new CustomEvent('sn:unauthorized'))
     throw error
   }
+
   if (res.status === 204) return undefined as T
   const type = res.headers.get('content-type') ?? ''
   return (type.includes('application/json') ? res.json() : res.text()) as Promise<T>
@@ -116,3 +145,4 @@ export function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message
   return 'Something went wrong.'
 }
+
