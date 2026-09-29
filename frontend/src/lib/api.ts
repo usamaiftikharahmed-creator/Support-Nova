@@ -2,7 +2,7 @@
    requests carry the double-submit CSRF token. No token or secret is kept in JS storage and the
    AI provider key never reaches the browser - all AI calls happen server-side. */
 
-export const API_BASE = '/api/v1'
+export const API_BASE = 'https://support-nova.fastapicloud.dev/api/v1'
 
 export class ApiError extends Error {
   status: number
