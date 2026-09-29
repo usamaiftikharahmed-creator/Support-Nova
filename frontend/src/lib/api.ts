@@ -27,7 +27,7 @@ export class ApiError extends Error {
   }
 }
 
-/* CSRF token returned by the login API. */
+/* CSRF token returned by the API after login/session check. */
 let sessionCsrfToken: string | undefined
 
 function csrfToken(): string | undefined {
@@ -92,18 +92,6 @@ export async function request<T>(method: string, path: string, options: { body?:
     throw new ApiError(0, 'network_error', 'Cannot reach SupportNova - check your connection and try again.')
   }
 
-  /* Save CSRF token returned by successful login. */
-  if (path === '/auth/login' && method === 'POST' && res.ok) {
-    try {
-      const data = await res.clone().json()
-      if (data.csrf_token) {
-        sessionCsrfToken = data.csrf_token
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
   if (!res.ok) {
     const error = await parseError(res)
     if (res.status === 401 && !path.startsWith('/auth/')) window.dispatchEvent(new CustomEvent('sn:unauthorized'))
@@ -111,8 +99,22 @@ export async function request<T>(method: string, path: string, options: { body?:
   }
 
   if (res.status === 204) return undefined as T
+
   const type = res.headers.get('content-type') ?? ''
-  return (type.includes('application/json') ? res.json() : res.text()) as Promise<T>
+
+  if (type.includes('application/json')) {
+    const data = await res.json()
+
+    /* Save CSRF token returned by /auth/login and /auth/me.
+       This is kept only in memory. */
+    if (data?.csrf_token) {
+      sessionCsrfToken = data.csrf_token
+    }
+
+    return data as T
+  }
+
+  return res.text() as Promise<T>
 }
 
 export const api = {
