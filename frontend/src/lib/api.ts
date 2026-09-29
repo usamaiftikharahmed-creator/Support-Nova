@@ -71,7 +71,7 @@ export async function request<T>(method: string, path: string, options: { body?:
   }
   let res: Response
   try {
-    res = await fetch(`${API_BASE}${path}${qs(options.query)}`, { method, headers, body, credentials: 'same-origin', signal: options.signal })
+    res = await fetch(`${API_BASE}${path}${qs(options.query)}`, { method, headers, body, credentials:'include', signal: options.signal })
   } catch (err) {
     if ((err as Error).name === 'AbortError') throw err
     throw new ApiError(0, 'network_error', 'Cannot reach SupportNova - check your connection and try again.')
@@ -95,7 +95,7 @@ export const api = {
 
 /** Download a file endpoint (exports, PDFs) with the session cookie and save it. */
 export async function download(path: string, query?: Query, fallbackName = 'download'): Promise<void> {
-  const res = await fetch(`${API_BASE}${path}${qs(query)}`, { credentials: 'same-origin' })
+  const res = await fetch(`${API_BASE}${path}${qs(query)}`, { credentials: 'include' })
   if (!res.ok) throw await parseError(res)
   const blob = await res.blob()
   const disposition = res.headers.get('content-disposition') ?? ''
